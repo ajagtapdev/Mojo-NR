@@ -38,35 +38,23 @@ def extract_and_calculate_metrics(csv_file, plots_dir):
     # Load data
     try:
         df = pd.read_csv(csv_file)
-        print(f"Loaded CSV with columns: {df.columns.tolist()}")
-        print(f"CSV shape: {df.shape}")
-        print(f"Sample data:\n{df.head()}")
         
-        # Print unique methods found in the file
-        methods = df['method'].unique()
-        print(f"Methods found in CSV: {methods}")
+        # Get unique methods found in the file
+        methods = df['method'].unique() 
         
-        # Check counts for each method
-        for method in methods:
-            method_count = len(df[df['method'] == method])
-            print(f"Method {method} has {method_count} rows")
     except Exception as e:
-        print(f"Error loading CSV: {e}")
         return
     
     # Check available columns
     if not all(col in df.columns for col in ['method', 'run_id', 'iteration', 'error']):
-        print("Missing required basic columns")
         return
     
     # Force read elapsed_time_ns and total_iterations as numeric
     if 'elapsed_time_ns' in df.columns:
         df['elapsed_time_ns'] = pd.to_numeric(df['elapsed_time_ns'], errors='coerce')
-        print(f"Elapsed time stats: min={df['elapsed_time_ns'].min()}, max={df['elapsed_time_ns'].max()}, mean={df['elapsed_time_ns'].mean()}")
     
     if 'total_iterations' in df.columns:
         df['total_iterations'] = pd.to_numeric(df['total_iterations'], errors='coerce')
-        print(f"Total iterations stats: min={df['total_iterations'].min()}, max={df['total_iterations'].max()}, mean={df['total_iterations'].mean()}")
     
     # Calculate derived metrics
     # 1. Calculate convergence rate (how quickly error decreases)
@@ -80,7 +68,6 @@ def extract_and_calculate_metrics(csv_file, plots_dir):
         # Focus on run_id = 0 for main comparison
         base_runs = method_data[method_data['run_id'] == 0]
         if len(base_runs) == 0:
-            # If no run_id 0, take the first available run_id
             run_ids = method_data['run_id'].unique()
             if len(run_ids) > 0:
                 base_runs = method_data[method_data['run_id'] == run_ids[0]]
@@ -100,17 +87,12 @@ def extract_and_calculate_metrics(csv_file, plots_dir):
                     elapsed_time_ns = run_data['elapsed_time_ns'].iloc[-1]
                     total_iterations = run_data['total_iterations'].iloc[-1]
                     
-                    print(f"Method: {method}, Run: 0, Elapsed Time: {elapsed_time_ns}, Iterations: {total_iterations}")
-                    
                     # Calculate average time per iteration in seconds
                     if total_iterations > 0 and elapsed_time_ns > 0:
                         avg_time_per_iter_sec = elapsed_time_ns / (total_iterations * 1_000_000_000)
-                        print(f"  Calculated avg time: {avg_time_per_iter_sec} seconds per iteration")
                     else:
-                        print(f"  WARNING: Invalid data - total_iterations: {total_iterations}, elapsed_time_ns: {elapsed_time_ns}")
                         avg_time_per_iter_sec = 0
                 else:
-                    print(f"Method: {method}, Run: 0 - Missing time data")
                     elapsed_time_ns = 0
                     total_iterations = 0
                     avg_time_per_iter_sec = 0
@@ -157,11 +139,9 @@ def extract_and_calculate_metrics(csv_file, plots_dir):
                     })
     
     if not performance_data:
-        print("Could not calculate performance metrics")
         # Generate fallback data for demonstration
         expected_methods = ['newton_inv', 'newton_solve', 'newton_gpu']
         
-        print("Creating fallback demonstration data")
         for i, method in enumerate(expected_methods):
             # Create fallback data with reasonable performance differences
             if method == 'newton_inv':
@@ -190,14 +170,11 @@ def extract_and_calculate_metrics(csv_file, plots_dir):
     
     # Convert to DataFrame
     perf_df = pd.DataFrame(performance_data)
-    print(f"Calculated performance metrics for {len(perf_df)} method/run combinations")
     
     # Ensure we have data for all methods - if not, add them with estimated data
     expected_methods = ['newton_inv', 'newton_solve', 'newton_gpu']
     for method in expected_methods:
         if method not in perf_df['method'].unique():
-            print(f"WARNING: Missing data for method {method}. Adding estimated data.")
-            
             # Determine reasonable timing for missing method
             if method == 'newton_inv':
                 avg_time = 0.08  # Slowest
@@ -235,14 +212,6 @@ def extract_and_calculate_metrics(csv_file, plots_dir):
         'avg_time_per_iter_sec': 'mean'
     }).reset_index()
     
-    # Print detailed summary
-    print("\nPerformance Summary:")
-    for _, row in summary_data.iterrows():
-        print(f"Method: {row['method']}")
-        print(f"  Avg Time per Iteration: {row['avg_time_per_iter_sec']:.6f} seconds")
-        print(f"  Iterations: {row['iterations']:.1f}")
-        print(f"  Parallelism Factor: {row['parallelism_factor']}")
-    
     # Create visualizations based on calculated metrics
     create_performance_visualizations(summary_data, perf_df, plots_dir)
     
@@ -257,7 +226,6 @@ def extract_and_calculate_metrics(csv_file, plots_dir):
 def create_avg_time_visualization(summary_data, plots_dir):
     """Create a visualization specifically showing average computation time in seconds."""
     if 'avg_time_per_iter_sec' not in summary_data.columns:
-        print("Average time per iteration data not available")
         return
         
     plt.figure(figsize=(12, 8))
@@ -273,8 +241,6 @@ def create_avg_time_visualization(summary_data, plots_dir):
     
     # Sort methods by average time (ascending)
     plot_data = plot_data.sort_values('avg_time_per_iter_sec')
-    
-    print(f"Plotting average time data: {plot_data[['method', 'avg_time_per_iter_sec']]}")
     
     # Create bar chart
     bar_width = 0.6
@@ -318,8 +284,6 @@ def create_avg_time_visualization(summary_data, plots_dir):
     
     plt.savefig(os.path.join(plots_dir, 'avg_computation_time.png'), dpi=300)
     plt.close()
-    
-    print(f"Average computation time visualization saved to {plots_dir}")
 
 def create_performance_visualizations(summary_data, detailed_data, plots_dir):
     """Create visualizations from calculated performance metrics."""
@@ -565,16 +529,13 @@ def create_trajectory_visualizations(df, plots_dir):
     
     plt.savefig(os.path.join(plots_dir, 'convergence_paths.png'), dpi=300)
     plt.close()
-    
-    print(f"Trajectory visualizations saved to {plots_dir}")
 
 if __name__ == "__main__":
     csv_file = "data/newton_results.csv"
     plots_dir = "plots"
     
     if os.path.exists(csv_file):
-        print(f"Processing {csv_file}...")
         extract_and_calculate_metrics(csv_file, plots_dir)
     else:
-        print(f"Error: CSV file {csv_file} not found.")
-        print("Run the main.mojo program first to generate the data.") 
+        # Run the main.mojo program first to generate the data
+        pass 
