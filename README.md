@@ -9,13 +9,6 @@ This project implements Newton's method to find the roots of a nonlinear system 
 1. **Matrix Inversion** - Computes the inverse of the Jacobian matrix
 2. **Direct Solve** - Solves the linear system directly without computing the inverse
 3. **GPU-Accelerated** - Simulates GPU parallelism with reduced computational overhead
-
-The specific system being solved is:
-- f₁(x,y) = x² + y² - 13 = 0
-- f₂(x,y) = x² - 2y² + 14 = 0
-
-This system has four solutions: (±3, ±2).
-
 ## Features
 
 - Multiple Newton's method implementations with performance benchmarking
